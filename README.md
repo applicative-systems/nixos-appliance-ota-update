@@ -17,7 +17,8 @@ This is not included in the demo but can be added from here:
 
 ## Run the demo
 
-Demo video on youtube: [Link](https://www.youtube.com/watch?v=vH_hBej5-m4)
+Demo video on youtube:
+[![Link to Youtube Video](./images/demo-video.png)](https://www.youtube.com/watch?v=vH_hBej5-m4)
 
 You can run the demo VM which can update itself like this:
 
@@ -43,6 +44,31 @@ updatectl update
 # Remove old system version (nice to see but unnecessary in normal update flows)
 systemd-sysupdate vacuum -m 1
 ```
+
+### Screenshots
+
+The partition table after the first boot.
+System partition B is still left empty:
+
+![Partition table after first boot](./images/partition-first-boot.png)
+
+Listing system version, possible update, and updating:
+
+![Update progress](./images/update-progress.png)
+
+Partition table after update.
+The system partition B now contains system version 2:
+
+![Partition B has been filled with the content of update](./images/partition-update-result.png)
+
+During reboot, both system versions are installed:
+
+![Boot selection](./images/boot-select.png)
+
+After booting system version 2 from partition B, partition A can be removed.
+Although this is not necessary as successive updates can reuse the old partition anyway:
+
+![Removing the old system partition](./images/partition-vacuum-result.png)
 
 ## Run the demo for other architectures
 
