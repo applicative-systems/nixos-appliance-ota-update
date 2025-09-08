@@ -166,6 +166,21 @@ This example snippet would be part of a bigger NixOS configuration that runs on 
 Other platforms like e.g. `riscv64-linux` are possible, too.
 Please note that not all but many packages from nixpkgs cross-compile.
 
+## References
+
+### systemd Documentation
+
+- https://www.freedesktop.org/software/systemd/man/latest/systemd-repart.html
+- https://www.freedesktop.org/software/systemd/man/latest/repart.d.html
+- https://www.freedesktop.org/software/systemd/man/latest/systemd-sysupdate.html
+- https://www.freedesktop.org/software/systemd/man/latest/sysupdate.d.html
+
+### Existing NixOS integration tests
+
+- https://github.com/NixOS/nixpkgs/blob/master/nixos/tests/appliance-repart-image-verity-store.nix
+- https://github.com/NixOS/nixpkgs/blob/master/nixos/tests/appliance-repart-image.nix
+- https://github.com/NixOS/nixpkgs/blob/master/nixos/tests/systemd-sysupdate.nix
+
 ## Consulting
 
 Would you like help, a potential analysis for your products, or training for your team?
