@@ -181,6 +181,10 @@ Please note that not all but many packages from nixpkgs cross-compile.
 - https://github.com/NixOS/nixpkgs/blob/master/nixos/tests/appliance-repart-image.nix
 - https://github.com/NixOS/nixpkgs/blob/master/nixos/tests/systemd-sysupdate.nix
 
+### Other projects
+
+* [sysupdate-playground](https://github.com/blitz/sysupdate-playground/): A similar project for A/B updates developed about a year prior. It illustrates the approach before certain facilities were upstreamed into Nixpkgs, features a different disk layout, and demonstrates cross-compilation for RISC-V.
+
 ## Consulting
 
 Would you like help, a potential analysis for your products, or training for your team?
