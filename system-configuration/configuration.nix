@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  lib,
   ...
 }:
 
@@ -37,4 +38,7 @@
   environment.systemPackages = [
     pkgs.parted
   ];
+
+  system.image.version = lib.mkDefault "1";
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 }
