@@ -35,13 +35,16 @@
           # macOS however needs linux-builder setup:
           # https://nixcademy.com/posts/macos-linux-builder/
           linuxSystem = toLinux system;
-          defaultImage = extendConfiguration inputs.self.nixosConfigurations.appliance ({ lib, ... }: {
-            nixpkgs = {
-              buildPlatform = lib.mkDefault linuxSystem;
-              hostPlatform = lib.mkDefault linuxSystem;
-            };
-            system.image.version = lib.mkDefault "1";
-          });
+          defaultImage = extendConfiguration inputs.self.nixosConfigurations.appliance (
+            { lib, ... }:
+            {
+              nixpkgs = {
+                buildPlatform = lib.mkDefault linuxSystem;
+                hostPlatform = lib.mkDefault linuxSystem;
+              };
+              system.image.version = lib.mkDefault "1";
+            }
+          );
           defaultImage2 = extendConfiguration defaultImage {
             system.image.version = "2";
           };
@@ -58,20 +61,28 @@
           };
 
           image-v1 = image defaultImage;
-          image-v1-x86_64 = image (extendConfiguration defaultImage {
-            nixpkgs.hostPlatform = "x86_64-linux";
-          });
-          image-v1-aarch64 = image (extendConfiguration defaultImage {
-            nixpkgs.hostPlatform = "aarch64-linux";
-          });
+          image-v1-x86_64 = image (
+            extendConfiguration defaultImage {
+              nixpkgs.hostPlatform = "x86_64-linux";
+            }
+          );
+          image-v1-aarch64 = image (
+            extendConfiguration defaultImage {
+              nixpkgs.hostPlatform = "aarch64-linux";
+            }
+          );
 
           update-v2 = sysupdate-package defaultImage2;
-          update-v2-x86_64 = sysupdate-package (extendConfiguration defaultImage2 {
-            nixpkgs.hostPlatform = "x86_64-linux";
-          });
-          update-v2-aarch64 = sysupdate-package (extendConfiguration defaultImage2 {
-            nixpkgs.hostPlatform = "aarch64-linux";
-          });
+          update-v2-x86_64 = sysupdate-package (
+            extendConfiguration defaultImage2 {
+              nixpkgs.hostPlatform = "x86_64-linux";
+            }
+          );
+          update-v2-aarch64 = sysupdate-package (
+            extendConfiguration defaultImage2 {
+              nixpkgs.hostPlatform = "aarch64-linux";
+            }
+          );
         }
       );
 
