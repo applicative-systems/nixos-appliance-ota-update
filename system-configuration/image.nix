@@ -39,15 +39,6 @@
     let
       inherit (pkgs.stdenv.hostPlatform) efiArch;
       size = "2G";
-
-      systemPartitionCommon = {
-        Type = "linux-generic";
-        Label = "_empty";
-        Minimize = "off";
-        SizeMinBytes = size;
-        SizeMaxBytes = size;
-        SplitName = "-";
-      };
     in
     {
       name = config.system.image.id;
@@ -77,15 +68,26 @@
         nix-store = {
           storePaths = [ config.system.build.toplevel ];
           stripNixStorePrefix = true;
-          repartConfig = systemPartitionCommon // {
+          repartConfig = {
+            Type = "linux-generic";
             Label = "nix-store_${config.system.image.version}";
+            Minimize = "off";
+            SizeMinBytes = size;
+            SizeMaxBytes = size;
             Format = "squashfs";
             ReadOnly = "yes";
             SplitName = "nix-store";
           };
         };
 
-        empty.repartConfig = systemPartitionCommon;
+        empty.repartConfig = {
+          Type = "linux-generic";
+          Label = "_empty";
+          Minimize = "off";
+          SizeMinBytes = size;
+          SizeMaxBytes = size;
+          SplitName = "-";
+        };
 
         root.repartConfig = {
           Type = "root";
