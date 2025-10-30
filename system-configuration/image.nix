@@ -53,6 +53,7 @@
             "/EFI/Linux/${config.system.boot.loader.ukiFile}".source =
               "${config.system.build.uki}/${config.system.boot.loader.ukiFile}";
 
+            # Optional but we don't see the system selection w/o timeout
             "/loader/loader.conf".source = builtins.toFile "loader.conf" ''
               timeout 20
             '';
