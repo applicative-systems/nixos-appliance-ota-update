@@ -8,13 +8,13 @@
   # very minimal X server setup
   services.xserver.enable = true;
   services.xserver.windowManager.jwm.enable = true;
-  services.displayManager.defaultSession = lib.mkDefault "none+jwm";
+  services.displayManager.defaultSession = lib.mkDefault "jwm";
 
   # run xserver automatically after autologin
   services.greetd = {
     enable = true;
     settings = {
-      default_session.command = "${pkgs.greetd}/bin/agreety --cmd ${pkgs.bashInteractive}/bin/bash";
+      default_session.command = "${pkgs.greetd}/bin/agreety --cmd /bin/sh";
       initial_session = {
         user = "root";
         command = "startx";
@@ -85,19 +85,22 @@
   fonts.enableDefaultPackages = false;
   fonts.packages = lib.mkForce [ pkgs.dejavu_fonts ];
 
-  services.xserver.desktopManager.session = lib.mkForce [
-    {
-      name = "none";
-      bgSupport = true; # if this bit is false we pull in a lot of deps
-      start = "";
-    }
-  ];
-
   nixpkgs.overlays = [
     (_final: prev: {
-      xdg-utils = prev.hello; # cheap fake xdg-utils that don't pull in Perl etc.
-      imlib2Full = prev.imlib2Full.override { jxlSupport = false; };
+      iproute2 = prev.iproute2.overrideAttrs (old: {
+        outputs = old.outputs ++ [ "scripts" ];
+        postInstall = old.postInstall or "" + ''
+          moveToOutput sbin/routel "$scripts"
+        '';
+      });
+
+      # cheaply patch away these packages as the
+      # NixOS modules don't make it easy for us
+      xdg-utils = prev.bash;
+      feh = prev.bash;
     })
   ];
 
+  security.sudo.enable = false;
+  networking.firewall.enable = false;
 }
