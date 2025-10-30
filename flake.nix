@@ -22,22 +22,10 @@
         builtins.mapAttrs (system: g: g inputs.nixpkgs.legacyPackages.${system}) (lib.genAttrs systems f);
 
       toLinux = builtins.replaceStrings [ "darwin" ] [ "linux" ];
-      appliance = lib.makeOverridable (
-        {
-          hostPlatform,
-          buildPlatform,
-          version,
-          extraModules ? [ ],
-        }:
-        import (inputs.nixpkgs + "/nixos") {
-          configuration = {
-            imports = [ ./system-configuration/configuration.nix ] ++ extraModules;
-            system.image.version = builtins.toString version;
-            nixpkgs = { inherit buildPlatform hostPlatform; };
-          };
-          system = null;
-        }
-      );
+      extendConfiguration = c: module: c.extendModules { modules = [ module ]; };
+
+      image = p: p.config.system.build.image;
+      sysupdate-package = p: p.config.system.build.sysupdate-package;
     in
     {
       packages = forEachSystem (
@@ -47,14 +35,17 @@
           # macOS however needs linux-builder setup:
           # https://nixcademy.com/posts/macos-linux-builder/
           linuxSystem = toLinux system;
-          defaultImage = appliance {
-            buildPlatform = linuxSystem;
-            hostPlatform = linuxSystem;
-            version = 1;
+          defaultImage = extendConfiguration inputs.self.nixosConfigurations.appliance ({ lib, ... }: {
+            nixpkgs = {
+              buildPlatform = lib.mkDefault linuxSystem;
+              hostPlatform = lib.mkDefault linuxSystem;
+            };
+            system.image.version = lib.mkDefault "1";
+          });
+          defaultImage2 = extendConfiguration defaultImage {
+            system.image.version = "2";
           };
-          defaultImage2 = defaultImage.override { version = 2; };
-          image = p: p.config.system.build.image;
-          sysupdate-package = p: p.config.system.build.sysupdate-package;
+
         in
         {
           run-image = pkgs.callPackage ./run-image.nix {
@@ -67,12 +58,20 @@
           };
 
           image-v1 = image defaultImage;
-          image-v1-x86_64 = image (defaultImage.override { hostPlatform = "x86_64-linux"; });
-          image-v1-aarch64 = image (defaultImage.override { hostPlatform = "aarch64-linux"; });
+          image-v1-x86_64 = image (extendConfiguration defaultImage {
+            nixpkgs.hostPlatform = "x86_64-linux";
+          });
+          image-v1-aarch64 = image (extendConfiguration defaultImage {
+            nixpkgs.hostPlatform = "aarch64-linux";
+          });
 
           update-v2 = sysupdate-package defaultImage2;
-          update-v2-x86_64 = sysupdate-package (defaultImage2.override { hostPlatform = "x86_64-linux"; });
-          update-v2-aarch64 = sysupdate-package (defaultImage2.override { hostPlatform = "aarch64-linux"; });
+          update-v2-x86_64 = sysupdate-package (extendConfiguration defaultImage2 {
+            nixpkgs.hostPlatform = "x86_64-linux";
+          });
+          update-v2-aarch64 = sysupdate-package (extendConfiguration defaultImage2 {
+            nixpkgs.hostPlatform = "aarch64-linux";
+          });
         }
       );
 
@@ -93,18 +92,16 @@
               type = "app";
               program =
                 let
-                  appl = appliance {
-                    buildPlatform = toLinux system;
-                    hostPlatform = demoSystem;
-                    version = 1;
-                    extraModules = [
-                      {
-                        services.lighttpd = {
-                          enable = true;
-                          document-root = inputs.self.packages.${system}.update-v2;
-                        };
-                      }
-                    ];
+                  appl = extendConfiguration inputs.self.nixosConfigurations.appliance {
+                    nixpkgs = {
+                      buildPlatform = toLinux system;
+                      hostPlatform = demoSystem;
+                    };
+                    system.image.version = "1";
+                    services.lighttpd = {
+                      enable = true;
+                      document-root = inputs.self.packages.${system}.update-v2;
+                    };
                   };
 
                 in
@@ -115,8 +112,7 @@
                         targetArch = arch;
                         inherit OVMF;
                       }
-                    }/bin/run-image \
-                      ${appl.config.system.build.image}/appliance_1.raw
+                    }/bin/run-image ${image appl}/appliance_1.raw
                   ''
                 );
             };
@@ -128,19 +124,10 @@
         }
       );
 
-      # this only exists for running `nixos-rebuild build-vm --flake .#appliance`
-      # and for running `nix-store -q -R $(nix build .#appliance --print-out-paths)`
-      # not for demo purposes
+      # debug image size on this as shown in:
+      # https://nixcademy.com/posts/minimizing-nixos-images/
       nixosConfigurations.appliance = inputs.nixpkgs.lib.nixosSystem {
-        modules = [
-          ./system-configuration/configuration.nix
-          {
-            system.image.version = "1";
-            nixpkgs.hostPlatform = "x86_64-linux";
-          }
-        ];
+        modules = [ ./system-configuration/configuration.nix ];
       };
-
-
     };
 }
