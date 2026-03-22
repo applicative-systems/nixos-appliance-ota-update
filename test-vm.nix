@@ -115,7 +115,7 @@ let
 
     # ── Reboot into group b (v2) ──────────────────────────────────────
     puts "\n── Rebooting into group b... ──"
-    run "rugix-ctrl system reboot --spare 2>&1 || reboot 2>&1"
+    send "rugix-ctrl system reboot --spare 2>&1 || reboot 2>&1\r"
 
     # ── Boot 2: group b (v2) ──────────────────────────────────────────
     puts "\n── Boot 2: group b (version 2) ──"
@@ -143,7 +143,7 @@ let
 
     # ── Reboot into group a (v3) ──────────────────────────────────────
     puts "\n── Rebooting into group a... ──"
-    run "rugix-ctrl system reboot --spare 2>&1 || reboot 2>&1"
+    send "rugix-ctrl system reboot --spare 2>&1 || reboot 2>&1\r"
 
     # ── Boot 3: group a (v3) ──────────────────────────────────────────
     puts "\n── Boot 3: group a (version 3) ──"
