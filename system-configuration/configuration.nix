@@ -31,6 +31,11 @@
     ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝     ╚═╝   ╚═╝
 
           -={ Applicance version ${config.system.image.version} }=-
+
+      rugix-ctrl system info          Show system info
+      rugix-ctrl update install URL   Install update from URL
+      rugix-ctrl system commit        Commit current boot group
+      parted -l                       Show partition layout
   '';
   services.getty.autologinUser = "root";
   users.users.root.initialPassword = "";

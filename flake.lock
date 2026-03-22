@@ -18,7 +18,23 @@
     },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "rugix-src": "rugix-src"
+      }
+    },
+    "rugix-src": {
+      "flake": false,
+      "locked": {
+        "dirtyRev": "338d5dba11f91c5135060014e0c329dd0f0c63ec-dirty",
+        "dirtyShortRev": "338d5db-dirty",
+        "lastModified": 1774180435,
+        "narHash": "sha256-3F/UqrL7vLGamC7UT36UyF7zb4Ro1TuWMfk9qwL9d/c=",
+        "type": "git",
+        "url": "file:../rugix"
+      },
+      "original": {
+        "type": "git",
+        "url": "file:../rugix"
       }
     }
   },
