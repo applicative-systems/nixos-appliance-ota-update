@@ -7,10 +7,7 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    rugix-src = {
-      url = "git+file:../rugix";
-      flake = false;
-    };
+    rugix.url = "github:rugix/rugix";
   };
 
   outputs =
@@ -33,21 +30,7 @@
       image = p: p.config.system.build.image;
       rugix-bundle = p: p.config.system.build.rugix-bundle;
 
-      # Overlay that provides the rugix package (rugix-ctrl and rugix-bundler
-      # binaries) built from source.
-      rugixOverlay = final: _prev: {
-        rugix = final.rustPlatform.buildRustPackage {
-          name = "rugix";
-          src = inputs.rugix-src;
-          cargoLock = {
-            lockFile = "${inputs.rugix-src}/Cargo.lock";
-            allowBuiltinFetchGit = true;
-          };
-          nativeBuildInputs = [ final.pkg-config ];
-          buildInputs = [ final.xz ];
-          doCheck = false;
-        };
-      };
+      rugixOverlay = inputs.rugix.overlays.default;
     in
     {
       packages = forEachSystem (
@@ -67,8 +50,38 @@
               system.image.version = lib.mkDefault "1";
             }
           );
+          # v3: plain system, used as the final update target.
+          defaultImage3 = extendConfiguration defaultImage {
+            system.image.version = "3";
+          };
+
+          # Delta bundle from v2 → v3 (computed from both full bundles).
+          v2-full-bundle = rugix-bundle (
+            extendConfiguration defaultImage {
+              system.image.version = "2";
+            }
+          );
+          v3-full-bundle = rugix-bundle defaultImage3;
+          v3-delta-bundle =
+            pkgs.runCommand "rugix-delta-v2-v3"
+              {
+                nativeBuildInputs = [ inputs.rugix.packages.${linuxSystem}.rugix-bundler ];
+              }
+              ''
+                mkdir -p $out
+                rugix-bundler delta \
+                  ${v2-full-bundle}/update.rugixb \
+                  ${v3-full-bundle}/update.rugixb \
+                  $out/update.rugixb
+              '';
+
+          # v2: serves the v3 delta bundle via lighttpd.
           defaultImage2 = extendConfiguration defaultImage {
             system.image.version = "2";
+            services.lighttpd = {
+              enable = true;
+              document-root = v3-delta-bundle;
+            };
           };
 
         in
@@ -105,6 +118,9 @@
               nixpkgs.hostPlatform = "aarch64-linux";
             }
           );
+
+          update-v3 = rugix-bundle defaultImage3;
+          update-v3-delta = v3-delta-bundle;
         }
       );
 
@@ -175,6 +191,9 @@
                   pkgs.callPackage ./test-vm.nix {
                     image = image appl;
                     OVMF = inputs.nixpkgs.legacyPackages.${demoSystem}.OVMF;
+                    v2-bundle = inputs.self.packages.${system}.update-v2;
+                    v3-delta-bundle = inputs.self.packages.${system}.update-v3-delta;
+                    v3-full-bundle = inputs.self.packages.${system}.update-v3;
                   }
                 )
                 + "/bin/test-vm";

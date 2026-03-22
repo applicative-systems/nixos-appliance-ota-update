@@ -13,7 +13,7 @@ in
   config.system.build.rugix-bundle =
     pkgs.runCommand "rugix-bundle-${version}"
       {
-        nativeBuildInputs = [ pkgs.buildPackages.rugix ];
+        nativeBuildInputs = [ pkgs.buildPackages.rugix-bundler ];
       }
       ''
         mkdir -p bundle/payloads
@@ -38,6 +38,6 @@ in
         cp ${build.uki}/${config.system.boot.loader.ukiFile} bundle/payloads/boot.efi
 
         mkdir -p $out
-        rugix-bundler bundle bundle $out/update.bundle
+        rugix-bundler bundle bundle $out/update.rugixb
       '';
 }

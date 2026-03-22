@@ -1,11 +1,11 @@
 # Automated VM test for the Rugix A/B update flow.
 # Usage: nix run .#test-vm
 #
-# This builds the demo image (v1 with lighttpd serving the v2 update bundle),
-# boots it in QEMU, and exercises the full Rugix update lifecycle:
-#   1. Verify initial state (group a active)
-#   2. Install the update bundle via HTTP
-#   3. Verify the update wrote to group b slots
+# This builds the demo image and exercises the full Rugix update lifecycle:
+#   1. Boot v1 (group a) — verify initial state
+#   2. Install v2 full update → reboot into group b
+#   3. Install v3 delta update → reboot into group a
+#   4. Commit group a as default
 {
   writeShellApplication,
   writeText,
@@ -13,6 +13,9 @@
   qemu,
   OVMF,
   image,
+  v2-bundle,
+  v3-full-bundle,
+  v3-delta-bundle,
   ...
 }:
 
@@ -23,7 +26,6 @@ let
       exit 1
     }
 
-    # Run a shell command that outputs PASS or FAIL, then a unique marker.
     set test_id 0
     proc assert {cmd label} {
       global test_id
@@ -44,7 +46,6 @@ let
       sleep 0.5
     }
 
-    # Run a command, wait for completion marker.
     proc run {cmd} {
       global test_id
       incr test_id
@@ -55,6 +56,21 @@ let
         timeout { abort "timeout: $cmd" }
       }
       sleep 0.5
+    }
+
+    proc wait_for_boot {} {
+      set timeout 240
+      expect {
+        -re "login:" { }
+        -re "emergency" { abort "system dropped to emergency mode" }
+        timeout { abort "boot timeout (240s)" }
+      }
+      sleep 3
+      send "\r"
+      sleep 3
+      send "stty -echo\r"
+      sleep 2
+      set timeout 20
     }
 
     set timeout 240
@@ -73,58 +89,80 @@ let
       -serial mon:stdio \
       -device qemu-xhci -device usb-tablet -device usb-kbd
 
-    # ── Wait for boot ───────────────────────────────────────────────────
-    expect {
-      -re "login:" { }
-      -re "emergency" { abort "system dropped to emergency mode" }
-      timeout { abort "boot timeout (240s)" }
-    }
-    puts "\n\n✓ System booted"
+    # ── Boot 1: group a (v1) ──────────────────────────────────────────
+    puts "\n── Boot 1: group a (version 1) ──"
+    wait_for_boot
+    puts "✓ System booted"
 
-    sleep 3
-    send "\r"
-    sleep 3
-    send "stty -echo\r"
-    sleep 2
+    assert "rugix-ctrl system info 2>&1 | grep -q activeGroup.*a" \
+      "active group is a"
 
-    set timeout 20
-
-    # ── Tests ───────────────────────────────────────────────────────────
-    assert "rugix-ctrl system info 2>&1 | grep -q activeGroup" \
-      "rugix-ctrl system info works"
-
-    assert "mount | grep -q squashfs" \
-      "nix-store mounted as squashfs"
+    assert "rugix-ctrl system info 2>&1 | grep -q defaultGroup.*a" \
+      "default group is a"
 
     assert "test -f /boot/EFI/Linux/nixos-a.efi" \
       "nixos-a.efi present on ESP"
 
-    assert "rugix-ctrl system info 2>&1 | grep -q '\"defaultGroup\"'" \
-      "default group reported by rugix-ctrl"
-
-    assert "lsblk -o PARTLABEL | grep -q nix-store-a" \
-      "nix-store-a partition exists"
-
-    # ── Install the update ──────────────────────────────────────────────
-    puts "\nInstalling update bundle..."
+    # ── Install v2 (full update) ──────────────────────────────────────
+    puts "\n── Installing v2 full update... ──"
     set timeout 300
-    # Run the update and capture output (don't assert, just run)
-    run "rugix-ctrl update install http://localhost/update.bundle --insecure-skip-bundle-verification --reboot no 2>&1"
+    run "rugix-ctrl update install http://localhost/update.rugixb --insecure-skip-bundle-verification --reboot no 2>&1"
     set timeout 20
-
-    # ── Verify update results ───────────────────────────────────────────
-    # Debug: check what the update did
-    run "ls -la /boot/EFI/Linux/ 2>&1"
-    run "ls -la /boot/ 2>&1"
-    run "df -h /boot 2>&1"
+    puts "✓ v2 update installed"
 
     assert "test -f /boot/EFI/Linux/nixos-b.efi" \
-      "nixos-b.efi installed on ESP"
+      "nixos-b.efi written to ESP"
 
-    assert "rugix-ctrl system info 2>&1 | grep -q activeGroup" \
-      "system info still works after update"
+    # ── Reboot into group b (v2) ──────────────────────────────────────
+    puts "\n── Rebooting into group b... ──"
+    run "rugix-ctrl system reboot --spare 2>&1 || reboot 2>&1"
 
-    # ── Done ────────────────────────────────────────────────────────────
+    # ── Boot 2: group b (v2) ──────────────────────────────────────────
+    puts "\n── Boot 2: group b (version 2) ──"
+    wait_for_boot
+    puts "✓ System rebooted"
+
+    assert "rugix-ctrl system info 2>&1 | grep -q activeGroup.*b" \
+      "active group is b"
+
+    assert "mount | grep -q squashfs" \
+      "nix-store mounted as squashfs"
+
+    run "rugix-ctrl system commit 2>&1"
+    puts "✓ Committed group b"
+
+    assert "rugix-ctrl system info 2>&1 | grep -q defaultGroup.*b" \
+      "default group is now b"
+
+    # ── Install v3 (delta update) ─────────────────────────────────────
+    puts "\n── Installing v3 delta update... ──"
+    set timeout 300
+    run "rugix-ctrl update install http://localhost/update.rugixb --insecure-skip-bundle-verification --reboot no 2>&1"
+    set timeout 20
+    puts "✓ v3 delta update installed"
+
+    # ── Reboot into group a (v3) ──────────────────────────────────────
+    puts "\n── Rebooting into group a... ──"
+    run "rugix-ctrl system reboot --spare 2>&1 || reboot 2>&1"
+
+    # ── Boot 3: group a (v3) ──────────────────────────────────────────
+    puts "\n── Boot 3: group a (version 3) ──"
+    wait_for_boot
+    puts "✓ System rebooted"
+
+    assert "rugix-ctrl system info 2>&1 | grep -q activeGroup.*a" \
+      "active group is a again"
+
+    assert "mount | grep -q squashfs" \
+      "nix-store mounted as squashfs"
+
+    run "rugix-ctrl system commit 2>&1"
+    puts "✓ Committed group a"
+
+    assert "rugix-ctrl system info 2>&1 | grep -q defaultGroup.*a" \
+      "default group is now a"
+
+    # ── Done ──────────────────────────────────────────────────────────
     puts "\n══════════════════════════════════════"
     puts "  All tests passed!"
     puts "══════════════════════════════════════\n"
@@ -149,8 +187,14 @@ writeShellApplication {
     IMAGE="${image}/appliance_1.raw"
     OVMF="${OVMF.fd}/FV/OVMF.fd"
 
-    echo "Image: $IMAGE"
-    echo "OVMF:  $OVMF"
+    V2_SIZE=$(du -sh "${v2-bundle}/update.rugixb" | cut -f1)
+    V3_FULL_SIZE=$(du -sh "${v3-full-bundle}/update.rugixb" | cut -f1)
+    V3_DELTA_SIZE=$(du -sh "${v3-delta-bundle}/update.rugixb" | cut -f1)
+
+    echo "Image:             $IMAGE"
+    echo "v2 full bundle:    $V2_SIZE"
+    echo "v3 full bundle:    $V3_FULL_SIZE"
+    echo "v3 delta bundle:   $V3_DELTA_SIZE"
     echo ""
 
     expect ${testScript} "$IMAGE" "$OVMF"

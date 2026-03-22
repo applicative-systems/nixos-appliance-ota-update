@@ -4,9 +4,8 @@
 }:
 
 {
-  environment.systemPackages = [ pkgs.rugix ];
+  environment.systemPackages = [ pkgs.rugix-ctrl ];
 
-  # Rugix system configuration
   environment.etc."rugix/system.toml" = {
     text = ''
       [config-partition]
