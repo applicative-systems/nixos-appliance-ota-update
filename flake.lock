@@ -25,10 +25,10 @@
     "rugix-src": {
       "flake": false,
       "locked": {
-        "dirtyRev": "338d5dba11f91c5135060014e0c329dd0f0c63ec-dirty",
-        "dirtyShortRev": "338d5db-dirty",
-        "lastModified": 1774180435,
-        "narHash": "sha256-3F/UqrL7vLGamC7UT36UyF7zb4Ro1TuWMfk9qwL9d/c=",
+        "dirtyRev": "fa50d95473732c5076d0fcd3afa1e5ec277a9204-dirty",
+        "dirtyShortRev": "fa50d95-dirty",
+        "lastModified": 1774198400,
+        "narHash": "sha256-CGZdV0ejpu0KExzaTbZbl42RnQCrlTZk1Hj3f/Ckk2Y=",
         "type": "git",
         "url": "file:../rugix"
       },

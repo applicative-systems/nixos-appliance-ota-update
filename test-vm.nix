@@ -99,8 +99,8 @@ let
     assert "test -f /boot/EFI/Linux/nixos-a.efi" \
       "nixos-a.efi present on ESP"
 
-    assert "grep -q a /boot/rugix/default-group" \
-      "default group is a"
+    assert "rugix-ctrl system info 2>&1 | grep -q '\"defaultGroup\"'" \
+      "default group reported by rugix-ctrl"
 
     assert "lsblk -o PARTLABEL | grep -q nix-store-a" \
       "nix-store-a partition exists"

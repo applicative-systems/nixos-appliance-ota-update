@@ -103,9 +103,6 @@
               timeout 20
               default nixos-a.efi
             '';
-
-            # Boot flow controller state: default group is "a".
-            "/rugix/default-group".source = builtins.toFile "default-group" "a";
           };
           repartConfig = {
             Type = "esp";
