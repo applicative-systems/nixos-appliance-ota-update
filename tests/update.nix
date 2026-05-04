@@ -7,8 +7,6 @@
 }:
 
 let
-  testKey = ./test-key;
-
   sshOpts = "-i /root/test-key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR";
 
   www = pkgs.runCommand "rugix-www" { } ''
@@ -110,7 +108,7 @@ in
     server.wait_for_unit("dnsmasq.service")
     server.wait_for_open_port(80)
 
-    server.succeed("install -m 600 ${testKey} /root/test-key")
+    server.succeed("install -m 600 ${./test-key} /root/test-key")
 
     with subtest("server hosts the v2 and v3-delta bundles"):
         server.succeed("curl -fsSI http://localhost/update.rugixb")
