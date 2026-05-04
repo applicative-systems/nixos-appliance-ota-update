@@ -22,63 +22,59 @@ in
   globalTimeout = 1800;
 
   nodes = {
-    server =
-      { ... }:
-      {
-        services.nginx = {
-          enable = true;
-          virtualHosts."default" = {
-            default = true;
-            root = www;
-          };
+    server = {
+      services.nginx = {
+        enable = true;
+        virtualHosts."default" = {
+          default = true;
+          root = www;
         };
-
-        services.dnsmasq = {
-          enable = true;
-          settings = {
-            interface = [ "eth1" ];
-            bind-interfaces = true;
-            dhcp-range = [ "192.168.1.100,192.168.1.150,12h" ];
-            dhcp-option = [
-              "option:router,192.168.1.2"
-              "option:dns-server,192.168.1.2"
-            ];
-            log-dhcp = true;
-          };
-        };
-
-        networking.firewall.allowedTCPPorts = [
-          53
-          80
-        ];
-        networking.firewall.allowedUDPPorts = [
-          53
-          67
-          68
-        ];
-
-        virtualisation.diskSize = 4096;
       };
 
-    appliance =
-      { ... }:
-      {
-        virtualisation.directBoot.enable = false;
-        virtualisation.useEFIBoot = true;
-        virtualisation.diskImage = null;
-
-        boot.loader.grub.enable = false;
-        boot.loader.systemd-boot.enable = false;
-
-        virtualisation.qemu.guestAgent.enable = false;
-        virtualisation.memorySize = 2048;
-        virtualisation.cores = 2;
-
-        virtualisation.qemu.options = [
-          "-drive"
-          "file=${image-test}/appliance_1.raw,format=raw,snapshot=on,index=0"
-        ];
+      services.dnsmasq = {
+        enable = true;
+        settings = {
+          interface = [ "eth1" ];
+          bind-interfaces = true;
+          dhcp-range = [ "192.168.1.100,192.168.1.150,12h" ];
+          dhcp-option = [
+            "option:router,192.168.1.2"
+            "option:dns-server,192.168.1.2"
+          ];
+          log-dhcp = true;
+        };
       };
+
+      networking.firewall.allowedTCPPorts = [
+        53
+        80
+      ];
+      networking.firewall.allowedUDPPorts = [
+        53
+        67
+        68
+      ];
+
+      virtualisation.diskSize = 4096;
+    };
+
+    appliance = {
+      virtualisation.directBoot.enable = false;
+      virtualisation.useEFIBoot = true;
+      virtualisation.diskImage = null;
+
+      boot.loader.grub.enable = false;
+      boot.loader.systemd-boot.enable = false;
+
+      virtualisation.qemu.guestAgent.enable = false;
+      virtualisation.memorySize = 2048;
+      virtualisation.cores = 2;
+
+      virtualisation.qemu.options = [
+        "-drive"
+        "file=${image-test}/appliance_1.raw,format=raw,snapshot=on,index=0"
+      ];
+    };
   };
 
   testScript = ''

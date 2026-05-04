@@ -176,11 +176,11 @@
         // {
           formatting = (treefmtEval pkgs).config.build.check inputs.self;
         }
-        // lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux) {
+        // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
           update-test = pkgs.testers.runNixOSTest (
             import ./tests/update.nix {
               inherit pkgs;
-              image-test = inputs.self.packages.${system}.image-test;
+              inherit (inputs.self.packages.${system}) image-test;
               v2-bundle = inputs.self.packages.${system}.update-v2-test;
               v3-delta-bundle = inputs.self.packages.${system}.update-v3-delta-test;
             }
@@ -227,8 +227,7 @@
                   ''
                 );
             };
-        in
-        let
+        
           # Automated headless test for the Rugix A/B update flow.
           # Builds the demo image, boots it in QEMU, and runs the full lifecycle.
           test-vm =
@@ -252,7 +251,7 @@
                 builtins.toString (
                   pkgs.callPackage ./test-vm.nix {
                     image = image appl;
-                    OVMF = inputs.nixpkgs.legacyPackages.${demoSystem}.OVMF;
+                    inherit (inputs.nixpkgs.legacyPackages.${demoSystem}) OVMF;
                     v2-bundle = inputs.self.packages.${system}.update-v2;
                     v3-delta-bundle = inputs.self.packages.${system}.update-v3-delta;
                     v3-full-bundle = inputs.self.packages.${system}.update-v3;
