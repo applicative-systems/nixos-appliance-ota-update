@@ -8,6 +8,9 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     rugix.url = "github:rugix/rugix";
+
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -31,6 +34,19 @@
       rugix-bundle = p: p.config.system.build.rugix-bundle;
 
       rugixOverlay = inputs.rugix.overlays.default;
+
+      treefmtEval =
+        pkgs:
+        inputs.treefmt-nix.lib.evalModule pkgs {
+          projectRootFile = "flake.nix";
+          programs = {
+            deadnix.enable = true;
+            nixfmt.enable = true;
+            prettier.enable = true;
+            shfmt.enable = true;
+            statix.enable = true;
+          };
+        };
     in
     {
       packages = forEachSystem (
@@ -152,9 +168,14 @@
         }
       );
 
+      formatter = forEachSystem (_system: pkgs: (treefmtEval pkgs).config.build.wrapper);
+
       checks = forEachSystem (
         system: pkgs:
         inputs.self.packages.${system}
+        // {
+          formatting = (treefmtEval pkgs).config.build.check inputs.self;
+        }
         // lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux) {
           update-test = pkgs.testers.runNixOSTest (
             import ./tests/update.nix {
