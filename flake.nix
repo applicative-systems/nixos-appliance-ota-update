@@ -84,6 +84,30 @@
             };
           };
 
+          # Test variants: same appliance, plus SSH + headless boot, so the
+          # NixOS integration test can drive `rugix-ctrl` over the network.
+          testImage = extendConfiguration defaultImage ./system-configuration/test-extras.nix;
+          testImage3 = extendConfiguration testImage {
+            system.image.version = "3";
+          };
+          testImage2 = extendConfiguration testImage {
+            system.image.version = "2";
+          };
+          v2-full-bundle-test = rugix-bundle testImage2;
+          v3-full-bundle-test = rugix-bundle testImage3;
+          v3-delta-bundle-test =
+            pkgs.runCommand "rugix-delta-v2-v3-test"
+              {
+                nativeBuildInputs = [ inputs.rugix.packages.${linuxSystem}.rugix-bundler ];
+              }
+              ''
+                mkdir -p $out
+                rugix-bundler delta \
+                  ${v2-full-bundle-test}/update.rugixb \
+                  ${v3-full-bundle-test}/update.rugixb \
+                  $out/update.rugixb
+              '';
+
         in
         {
           run-image = pkgs.callPackage ./run-image.nix {
@@ -121,10 +145,27 @@
 
           update-v3 = rugix-bundle defaultImage3;
           update-v3-delta = v3-delta-bundle;
+
+          image-test = image testImage;
+          update-v2-test = v2-full-bundle-test;
+          update-v3-delta-test = v3-delta-bundle-test;
         }
       );
 
-      checks = inputs.self.packages;
+      checks = forEachSystem (
+        system: pkgs:
+        inputs.self.packages.${system}
+        // lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux) {
+          update-test = pkgs.testers.runNixOSTest (
+            import ./tests/update.nix {
+              inherit pkgs;
+              image-test = inputs.self.packages.${system}.image-test;
+              v2-bundle = inputs.self.packages.${system}.update-v2-test;
+              v3-delta-bundle = inputs.self.packages.${system}.update-v3-delta-test;
+            }
+          );
+        }
+      );
 
       apps = forEachSystem (
         system: pkgs:
