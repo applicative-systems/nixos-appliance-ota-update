@@ -227,7 +227,7 @@
                   ''
                 );
             };
-        
+
           # Automated headless test for the Rugix A/B update flow.
           # Builds the demo image, boots it in QEMU, and runs the full lifecycle.
           test-vm =
