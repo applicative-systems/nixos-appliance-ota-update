@@ -190,14 +190,14 @@
                 Two VMs come up: 'server' (nginx serving update bundles) and
                 'appliance' (the NixOS A/B image).
 
-                Bundles served by the server:
-                  http://192.168.1.2/update.rugixb        (v2 full)
-                  http://192.168.1.2/update-delta.rugixb  (v3 delta)
+                Bundles served by the server (resolved via dnsmasq):
+                  http://update-server/update.rugixb        (v2 full)
+                  http://update-server/update-delta.rugixb  (v3 delta)
 
                 Useful REPL calls (after start_all()):
                   wait_ssh()
                   ssh("rugix-ctrl system info")
-                  install_update("http://192.168.1.2/update.rugixb")
+                  install_update("http://update-server/update.rugixb")
                   reboot_and_commit("b")
                   appliance.shell_interact()      # serial console
                   server.shell_interact()

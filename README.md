@@ -46,11 +46,11 @@ start_all()                                          # boot both VMs
 wait_ssh()                                           # appliance is up
 ssh("rugix-ctrl system info")                        # active=a, default=a
 
-install_update("http://192.168.1.2/update.rugixb")   # v2 full bundle
-reboot_and_commit("b")                               # active=b, default=b
+install_update("http://update-server/update.rugixb")       # v2 full
+reboot_and_commit("b")                                     # active=b, default=b
 
-install_update("http://192.168.1.2/update-delta.rugixb")  # v3 delta
-reboot_and_commit("a")                               # active=a, default=a
+install_update("http://update-server/update-delta.rugixb") # v3 delta
+reboot_and_commit("a")                                     # active=a, default=a
 
 appliance.shell_interact()                           # serial console
 ```

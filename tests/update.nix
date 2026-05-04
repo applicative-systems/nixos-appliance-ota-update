@@ -52,6 +52,9 @@ in
           # MACs as 52:54:00:12:<net>:<node>; eth0 on the appliance (node 1
           # on the test network) gets 52:54:00:12:01:01.
           dhcp-host = [ "52:54:00:12:01:01,192.168.1.100" ];
+          # Resolve `update-server` to the server's IP so the appliance
+          # doesn't need to know the address.
+          address = [ "/update-server/192.168.1.2" ];
           dhcp-option = [
             "option:router,192.168.1.2"
             "option:dns-server,192.168.1.2"
@@ -149,12 +152,12 @@ in
         ssh("test -f /boot/EFI/Linux/nixos-a.efi")
 
     with subtest("v2: install full bundle, switch to group b"):
-        install_update("http://192.168.1.2/update.rugixb")
+        install_update("http://update-server/update.rugixb")
         ssh("test -f /boot/EFI/Linux/nixos-b.efi")
         reboot_and_commit(expect_active="b")
 
     with subtest("v3: install delta bundle, switch to group a"):
-        install_update("http://192.168.1.2/update-delta.rugixb")
+        install_update("http://update-server/update-delta.rugixb")
         reboot_and_commit(expect_active="a")
   '';
 }
