@@ -91,13 +91,8 @@
                   $out/update.rugixb
               '';
 
-          # v2: serves the v3 delta bundle via lighttpd.
           defaultImage2 = extendConfiguration defaultImage {
             system.image.version = "2";
-            services.lighttpd = {
-              enable = true;
-              document-root = v3-delta-bundle;
-            };
           };
 
           # Test variants: same appliance, plus SSH + headless boot, so the
@@ -126,15 +121,6 @@
 
         in
         {
-          run-image = pkgs.callPackage ./run-image.nix {
-            # macOS: Use linux-builder to build OVMF
-            OVMF =
-              if pkgs.stdenv.isLinux then
-                pkgs.OVMF
-              else
-                (import inputs.nixpkgs { system = toLinux system; }).OVMF;
-          };
-
           image-v1 = image defaultImage;
           image-v1-x86_64 = image (
             extendConfiguration defaultImage {
@@ -188,84 +174,49 @@
         }
       );
 
+      # Interactive driver for the integration test: boots the server +
+      # appliance VMs and drops into a Python REPL where the user can
+      # ssh from server → appliance, install bundles, reboot, etc.
       apps = forEachSystem (
         system: pkgs:
-        let
-          inherit (inputs.self.packages.${system}) run-image;
+        lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux (
+          let
+            driver = inputs.self.checks.${system}.update-test.driverInteractive;
+            wrapper = pkgs.writeShellScriptBin "rugix-demo" ''
+              cat <<'EOF'
 
-          vm-demo =
-            arch:
-            let
-              demoSystem = "${arch}-linux";
-              inherit (inputs.nixpkgs.legacyPackages.${demoSystem}) OVMF;
-            in
-            {
+              ── Rugix A/B OTA update — interactive demo ───────────────────────
+
+                Two VMs come up: 'server' (nginx serving update bundles) and
+                'appliance' (the NixOS A/B image).
+
+                Bundles served by the server:
+                  http://192.168.1.2/update.rugixb        (v2 full)
+                  http://192.168.1.2/update-delta.rugixb  (v3 delta)
+
+                Useful REPL calls (after start_all()):
+                  wait_ssh()
+                  ssh("rugix-ctrl system info")
+                  install_update("http://192.168.1.2/update.rugixb")
+                  reboot_and_commit("b")
+                  appliance.shell_interact()      # serial console
+                  server.shell_interact()
+
+              ──────────────────────────────────────────────────────────────────
+
+              EOF
+              exec ${driver}/bin/nixos-test-driver "$@"
+            '';
+            demo = {
               type = "app";
-              program =
-                let
-                  appl = extendConfiguration inputs.self.nixosConfigurations.appliance {
-                    nixpkgs = {
-                      buildPlatform = toLinux system;
-                      hostPlatform = demoSystem;
-                    };
-                    system.image.version = "1";
-                    services.lighttpd = {
-                      enable = true;
-                      document-root = inputs.self.packages.${system}.update-v2;
-                    };
-                  };
-
-                in
-                builtins.toString (
-                  pkgs.writeShellScript "vm-demo" ''
-                    ${
-                      run-image.override {
-                        targetArch = arch;
-                        inherit OVMF;
-                      }
-                    }/bin/run-image ${image appl}/appliance_1.raw
-                  ''
-                );
+              program = "${wrapper}/bin/rugix-demo";
             };
-
-          # Automated headless test for the Rugix A/B update flow.
-          # Builds the demo image, boots it in QEMU, and runs the full lifecycle.
-          test-vm =
-            let
-              demoSystem = "${pkgs.stdenv.hostPlatform.qemuArch}-linux";
-              appl = extendConfiguration inputs.self.nixosConfigurations.appliance {
-                nixpkgs = {
-                  buildPlatform = toLinux system;
-                  hostPlatform = demoSystem;
-                };
-                system.image.version = "1";
-                services.lighttpd = {
-                  enable = true;
-                  document-root = inputs.self.packages.${system}.update-v2;
-                };
-              };
-            in
-            {
-              type = "app";
-              program =
-                builtins.toString (
-                  pkgs.callPackage ./test-vm.nix {
-                    image = image appl;
-                    inherit (inputs.nixpkgs.legacyPackages.${demoSystem}) OVMF;
-                    v2-bundle = inputs.self.packages.${system}.update-v2;
-                    v3-delta-bundle = inputs.self.packages.${system}.update-v3-delta;
-                    v3-full-bundle = inputs.self.packages.${system}.update-v3;
-                  }
-                )
-                + "/bin/test-vm";
-            };
-        in
-        {
-          inherit test-vm;
-          default = inputs.self.apps.${system}."vm-demo-${pkgs.stdenv.hostPlatform.qemuArch}";
-          vm-demo-x86_64 = vm-demo "x86_64";
-          vm-demo-aarch64 = vm-demo "aarch64";
-        }
+          in
+          {
+            inherit demo;
+            default = demo;
+          }
+        )
       );
 
       # debug image size on this as shown in:

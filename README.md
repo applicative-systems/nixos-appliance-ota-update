@@ -31,61 +31,35 @@ entries via atomic EFI variable writes (`bootctl set-oneshot` for try-next,
 `bootctl set-default` for commit). Failed boots automatically revert to the
 previous default.
 
-## Run the demo
-
-You can run the demo VM which updates itself through a full A/B cycle:
+## Run the interactive demo (Linux)
 
 ```console
 nix run
 ```
 
-In the VM, you can run the following commands:
+Boots two QEMU VMs side-by-side — `server` (nginx hosting the update
+bundles) and `appliance` (the NixOS A/B image) — and drops into a
+Python REPL where you can drive the full A/B cycle yourself:
+
+```python
+start_all()                                          # boot both VMs
+wait_ssh()                                           # appliance is up
+ssh("rugix-ctrl system info")                        # active=a, default=a
+
+install_update("http://192.168.1.2/update.rugixb")   # v2 full bundle
+reboot_and_commit("b")                               # active=b, default=b
+
+install_update("http://192.168.1.2/update-delta.rugixb")  # v3 delta
+reboot_and_commit("a")                               # active=a, default=a
+
+appliance.shell_interact()                           # serial console
+```
+
+The same scenario runs non-interactively as the integration test:
 
 ```console
-# Show Rugix system info (active group, default group, slots)
-rugix-ctrl system info
-
-# Install an update from the built-in HTTP server
-rugix-ctrl update install http://localhost/update.rugixb \
-  --insecure-skip-bundle-verification --reboot yes
-
-# After rebooting, commit the new group as the default
-rugix-ctrl system commit
-
-# Show partition layout
-parted -l
+nix flake check
 ```
-
-## Run the automated test
-
-The test exercises a complete A/B cycle with three boots:
-
-1. Boot v1 (group a) → install v2 full update → reboot
-2. Boot v2 (group b) → commit → install v3 delta update → reboot
-3. Boot v3 (group a) → commit → verify
-
-```console
-nix run .#test-vm
-```
-
-Example output:
-
-```
-v2 full bundle:    2.1G
-v3 full bundle:    2.1G
-v3 delta bundle:   37M
-```
-
-## Run the demo for other architectures
-
-These demos will run on x86_64 and aarch64 host systems:
-
-```console
-nix run .#vm-demo-aarch64
-nix run .#vm-demo-x86_64
-```
-
-Please note that emulating the other platform is slower than running the demo on the same platform.
 
 ## Just build the images
 
@@ -159,10 +133,12 @@ Minimal desktop setup with auto login and automatic X start.
 General size reduction for NixOS appliance images without Nix, Perl, etc.
 (Might be too minimal for production systems.)
 
-#### [`test-vm.nix`](./test-vm.nix)
+#### [`tests/update.nix`](./tests/update.nix)
 
-Automated VM test that boots the appliance in QEMU, installs updates,
-reboots, and verifies the full A/B lifecycle.
+NixOS integration test that boots the appliance and a separate update
+server in QEMU, installs the v2 and v3-delta bundles over HTTP, and
+verifies the full A/B lifecycle. Also serves as the interactive demo
+via `nix run` (which uses the same test's `driverInteractive`).
 
 ### Cross compilation and demo scripts
 
