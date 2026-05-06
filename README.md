@@ -189,3 +189,4 @@ Please note that not all but many packages from nixpkgs cross-compile.
 
 Would you like help, a potential analysis for your products, or training for your team?
 Contact us, we do this every day for many organizations worldwide: hello@nixcademy.com
+
