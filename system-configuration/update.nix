@@ -6,6 +6,13 @@
 {
   environment.systemPackages = [ pkgs.rugix-ctrl ];
 
+  # The appliance reaches its update server by the (short) hostname handed
+  # out over DHCP, e.g. `rugix-ctrl update install http://update-server/...`.
+  # systemd-resolved refuses to send single-label names like `update-server`
+  # to upstream DNS by default, so name resolution would fail. Allow it.
+  # (Use a fully-qualified name and you don't need this.)
+  services.resolved.extraConfig = "ResolveUnicastSingleLabel=yes";
+
   environment.etc."rugix/system.toml" = {
     text = ''
       [config-partition]
