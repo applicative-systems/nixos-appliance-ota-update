@@ -14,8 +14,10 @@
 
       systems = [
         "x86_64-linux"
-        "aarch64-linux"
-        "aarch64-darwin"
+        # will work on all these systems but we don't have CI for those
+        # now.
+        #"aarch64-linux"
+        #"aarch64-darwin"
       ];
       forEachSystem =
         f:
