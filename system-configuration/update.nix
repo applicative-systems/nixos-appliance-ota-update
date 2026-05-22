@@ -30,6 +30,7 @@
             Path = "auto";
             MatchPattern = "nix-store_@v";
             Type = "partition";
+            MatchPartitionType = "linux-generic";
             ReadOnly = "yes";
           };
 

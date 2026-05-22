@@ -87,13 +87,6 @@
 
   nixpkgs.overlays = [
     (_final: prev: {
-      iproute2 = prev.iproute2.overrideAttrs (old: {
-        outputs = old.outputs ++ [ "scripts" ];
-        postInstall = old.postInstall or "" + ''
-          moveToOutput sbin/routel "$scripts"
-        '';
-      });
-
       # cheaply patch away these packages as the
       # NixOS modules don't make it easy for us
       xdg-utils = prev.bash;
