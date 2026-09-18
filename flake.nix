@@ -56,7 +56,7 @@
           run-image = pkgs.callPackage ./run-image.nix {
             # macOS: Use linux-builder to build OVMF
             OVMF =
-              if pkgs.stdenv.isLinux then
+              if pkgs.stdenv.hostPlatform.isLinux then
                 pkgs.OVMF
               else
                 (import inputs.nixpkgs { system = toLinux system; }).OVMF;

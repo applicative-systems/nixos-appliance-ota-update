@@ -9,7 +9,7 @@
 
 let
   accel =
-    if stdenv.isDarwin && targetArch == "aarch64" then
+    if stdenv.hostPlatform.isDarwin && targetArch == "aarch64" then
       "-accel hvf"
     else if targetArch == stdenv.hostPlatform.qemuArch then
       "-accel kvm"
