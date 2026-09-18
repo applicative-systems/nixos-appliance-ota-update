@@ -8,7 +8,7 @@
   # very minimal X server setup
   services.xserver.enable = true;
   services.xserver.windowManager.jwm.enable = true;
-  services.displayManager.defaultSession = lib.mkDefault "jwm";
+  services.displayManager.defaultSession = lib.mkDefault "none+jwm";
 
   # run xserver automatically after autologin
   services.greetd = {

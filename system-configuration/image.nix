@@ -41,6 +41,7 @@
       size = "2G";
     in
     {
+      enable = true;
       name = config.system.image.id;
       split = true;
 
