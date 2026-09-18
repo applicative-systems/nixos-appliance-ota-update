@@ -10,4 +10,5 @@
   programs.nano.enable = false;
   programs.fuse.enable = false;
   security.sudo.enable = false;
+  networking.firewall.enable = false;
 }

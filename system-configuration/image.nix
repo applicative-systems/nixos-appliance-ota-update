@@ -31,6 +31,9 @@
       "/nix/store" = "nix-store";
     };
 
+  # boot is systemd-boot + UKI
+  boot.loader.grub.enable = false;
+
   system.image.id = "appliance";
   system.nixos.distroName = "NixcademyOS";
 

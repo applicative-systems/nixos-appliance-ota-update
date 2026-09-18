@@ -13,6 +13,7 @@
     ./desktop.nix
     ./image.nix
     ./size-reduction.nix
+    ./size-reduction-desktop.nix
     ./update.nix
     ./update-package.nix
   ];
